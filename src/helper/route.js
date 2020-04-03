@@ -6,6 +6,9 @@ const readdir = promisify(fs.readdir);
 const handlebars=require("handlebars");
 const config=require("../config/config");
 const mime=require("../helper/mime");
+const compress=require("./compress");
+
+
 const tplpath=path.join(__dirname,"../template/dir.tpl");
 const source=fs.readFileSync(tplpath);
 const template=handlebars.compile(source.toString());
@@ -16,7 +19,11 @@ module.exports=async function (req,res,filepath) {
     if(stats.isFile()){
          res.statusCode=200;
          res.setHeader("Conten-Type",mime(filepath));
-         fs.createReadStream(filepath).pipe(res);
+         let rs=fs.createReadStream(filepath);
+         if(filepath.match(config.compress)){
+          rs=compress(rs,req,res); 
+         }
+         rs.pipe(res);
      }else if(stats.isDirectory()){
        const files=await readdir(filepath);
        res.statusCode=200;
